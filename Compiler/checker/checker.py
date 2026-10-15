@@ -54,13 +54,13 @@ class TypeChecker(NodeVisitor):
 		self.current_symtable = node.symtable
 		self.first_pass = True
 
-		for artif in node.artifacts:
-			self.visit(artif)
+		for index, artif in enumerate(node.artifacts):
+			node.artifacts[index] = self.visit(artif)
 
 		self.first_pass = False
 
-		for artif in node.artifacts:
-			self.visit(artif)
+		for index, artif in enumerate(node.artifacts):
+			node.artifacts[index] = self.visit(artif)
 
 		return node
 
@@ -91,10 +91,10 @@ class TypeChecker(NodeVisitor):
 
 		self.current_func_sym = node.symbol
 
-		for decl in node.params:
-			self.visit(decl)
+		for index, decl in enumerate(node.params):
+			node.params[index] = self.visit(decl)
 
-		self.visit(node.return_type)
+		node.return_type = self.visit(node.return_type)
 		symbol = self._pop_symbol()
 
 		if not isinstance(symbol, sym.Container):
@@ -102,7 +102,7 @@ class TypeChecker(NodeVisitor):
 
 		self.current_func_sym.returns = symbol
 
-		self.visit(node.body)
+		node.body = self.visit(node.body)
 
 		self.current_symtable = self.current_symtable.get_parent()
 
@@ -137,8 +137,8 @@ class TypeChecker(NodeVisitor):
 
 		self.current_symtable = node.symtable.set_parent(self.current_symtable)
 
-		for stmt in node.statements:
-			self.visit(stmt)
+		for index, stmt in enumerate(node.statements):
+			node.statements[index] = self.visit(stmt)
 
 		self.current_symtable = self.current_symtable.get_parent()
 
@@ -146,40 +146,40 @@ class TypeChecker(NodeVisitor):
 
 
 	def visitIf(self, node: Node.If):
-		self.visit(node.condition)
+		node.condition = self.visit(node.condition)
 		condition = self.typeof(self._pop_symbol())
 
 		if condition is not prim.BOOL_CONTAINER:
 			raise ValueError("if condition must be bool.")
 
-		self.visit(node.then_branch)
+		node.then_branch = self.visit(node.then_branch)
 		if node.else_branch:
-			self.visit(node.else_branch)
+			node.else_branch = self.visit(node.else_branch)
 		return node
 
 
 	def visitWhile(self, node: Node.While):
-		self.visit(node.condition)
+		node.condition = self.visit(node.condition)
 		condition = self.typeof(self._pop_symbol())
 
 		if condition is not prim.BOOL_CONTAINER:
 			raise ValueError("while condition must be bool.")
 
-		self.visit(node.body)
+		node.body = self.visit(node.body)
 		return node
 
 
 	def visitFor(self, node: Node.For):
 		self.current_symtable = node.symtable.set_parent(self.current_symtable)
-		self.visit(node.init)
-		self.visit(node.condition)
+		node.init = self.visit(node.init)
+		node.condition = self.visit(node.condition)
 		condition = self.typeof(self._pop_symbol())
 
 		if condition is not prim.BOOL_CONTAINER:
 			raise ValueError("for condition must be bool.")
 
-		self.visit(node.step)
-		self.visit(node.body)
+		node.step = self.visit(node.step)
+		node.body = self.visit(node.body)
 		self.current_symtable = node.symtable.get_parent()
 		return node
 
@@ -188,14 +188,14 @@ class TypeChecker(NodeVisitor):
 		assert node.symbol
 
 		if node.type is not None:
-			self.visit(node.type)
+			node.type = self.visit(node.type)
 			type_sym = self._pop_symbol()
 			if not isinstance(type_sym, sym.Container):
 				raise ValueError(f"Expected type to be a container, not {type_sym}.")
 			node.symbol.type = type_sym
 
 		if node.value is not None:
-			self.visit(node.value)
+			node.value = self.visit(node.value)
 			value_sym = self._pop_symbol()
 			value_type = self.typeof(value_sym)
 			if node.symbol.type is None:
@@ -213,8 +213,8 @@ class TypeChecker(NodeVisitor):
 
 
 	def visitBinaryOp(self, node: Node.BinaryOp):
-		self.visit(node.left)
-		self.visit(node.right)
+		node.left = self.visit(node.left)
+		node.right = self.visit(node.right)
 
 		right_type = self.typeof(self._pop_symbol())
 		left_type = self.typeof(self._pop_symbol())
@@ -254,7 +254,7 @@ class TypeChecker(NodeVisitor):
 
 
 	def visitUnaryOp(self, node: Node.UnaryOp):
-		self.visit(node.operand)
+		node.operand = self.visit(node.operand)
 		operand = self._pop_symbol()
 
 		operand_type = self.typeof(operand)
@@ -278,7 +278,7 @@ class TypeChecker(NodeVisitor):
 
 	def visitCall(self, node: Node.Call):
 
-		self.visit(node.callee)
+		node.callee = self.visit(node.callee)
 
 		func_sym = self._pop_symbol()
 
@@ -294,7 +294,7 @@ class TypeChecker(NodeVisitor):
 		assert func_sym.returns
 
 		for index, (arg, parameter) in enumerate(zip(node.args, func_sym.arguments), start=1):
-			self.visit(arg)
+			node.args[index - 1] = self.visit(arg)
 			argument = self._pop_symbol()
 			assert parameter.type
 			argument_type = self.typeof(argument)
@@ -320,7 +320,7 @@ class TypeChecker(NodeVisitor):
 				raise ValueError(f"Function {self.current_func_sym.name} must return a value.")
 
 		else:
-			self.visit(node.value)
+			node.value = self.visit(node.value)
 			value = self._pop_symbol()
 			value_type = self.typeof(value)
 			if value_type is not self.current_func_sym.returns:
@@ -340,8 +340,8 @@ class TypeChecker(NodeVisitor):
 
 		assert node.symbol
 
-		for member in node.fields:
-			self.visit(member)
+		for index, member in enumerate(node.fields):
+			node.fields[index] = self.visit(member)
 
 		return node
 
@@ -356,7 +356,7 @@ class TypeChecker(NodeVisitor):
 			container = container_symbol
 			node.symbol = container
 
-		for method in node.methods:
-			self.visit(method)
+		for index, method in enumerate(node.methods):
+			node.methods[index] = self.visit(method)
 
 		return node

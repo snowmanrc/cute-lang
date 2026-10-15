@@ -1,10 +1,13 @@
 from dataclasses import dataclass, field
-from typing import List, Literal, Optional, Union
+from typing import List, Literal, Optional, TypeVar, Union
 from abc import ABC, abstractmethod
 
 from Compiler.defs.op import BinaryOpType, UnaryOpType
 from Compiler.defs.node_base import NodeBase
 import Compiler.defs.symbols as sym
+
+
+NodeType = TypeVar("NodeType", bound=NodeBase)
 
 
 class Node:
@@ -119,10 +122,10 @@ class Node:
 class NodeVisitor(ABC):
 
 
-	def visit(self, node: NodeBase) -> NodeBase:
+	def visit(self, node: NodeType) -> NodeType:
 		method_name = f"visit{node.__class__.__name__}"
 		visitor_method = getattr(self, method_name, self._generic_visit)
-		return visitor_method(node)
+		return visitor_method(node)  # type: ignore[return-value]
 
 
 	def _generic_visit(self, node: NodeBase):
@@ -130,66 +133,66 @@ class NodeVisitor(ABC):
 			f"No visit{node.__class__.__name__} method defined in {self.__class__.__name__}"
 		)
 
-
+	@abstractmethod
 	def visitProgram(self, node: Node.Program) -> NodeBase:
 		pass
 
-
+	@abstractmethod
 	def visitFunction(self, node: Node.Function) -> NodeBase:
 		pass
 
-
+	@abstractmethod
 	def visitLiteral(self, node: Node.Literal) -> NodeBase:
 		pass
 
-
+	@abstractmethod
 	def visitIdentifier(self, node: Node.Identifier) -> NodeBase:
 		pass
 
-
+	@abstractmethod
 	def visitBlock(self, node: Node.Block) -> NodeBase:
 		pass
 
-
+	@abstractmethod
 	def visitIf(self, node: Node.If) -> NodeBase:
 		pass
 
-
+	@abstractmethod
 	def visitWhile(self, node: Node.While) -> NodeBase:
 		pass
 
-
+	@abstractmethod
 	def visitFor(self, node: Node.For) -> NodeBase:
 		pass
 
-
+	@abstractmethod
 	def visitDeclaration(self, node: Node.Declaration) -> NodeBase:
 		pass
 
-
+	@abstractmethod
 	def visitBinaryOp(self, node: Node.BinaryOp) -> NodeBase:
 		pass
 
-
+	@abstractmethod
 	def visitUnaryOp(self, node: Node.UnaryOp) -> NodeBase:
 		pass
 
-
+	@abstractmethod
 	def visitCall(self, node: Node.Call) -> NodeBase:
 		pass
 
-
+	@abstractmethod
 	def visitReturn(self, node: Node.Return) -> NodeBase:
 		pass
 
-
+	@abstractmethod
 	def visitBuiltinCommand(self, node: Node.BuiltinCommand) -> NodeBase:
 		pass
 
-
+	@abstractmethod
 	def visitContainer(self, node: Node.Container) -> NodeBase:
 		pass
 
-
+	@abstractmethod
 	def visitContainerImpl(self, node: Node.ContainerImpl) -> NodeBase:
 		pass
