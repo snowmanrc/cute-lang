@@ -118,7 +118,7 @@ class TypeChecker(NodeVisitor):
 			case "bool":
 				self.symbol_stack.append(prim.BOOL_CONTAINER)
 			case "char":
-				self.symbol_stack.append(prim.INT_CONTAINER)
+				self.symbol_stack.append(prim.CHAR_CONTAINER)
 			case "string":
 				raise ValueError("String literals do not have a supported type.")
 		return node
