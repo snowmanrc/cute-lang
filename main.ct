@@ -1,0 +1,74 @@
+container object*
+
+///
+This file will be upgraded as time goes on, it will show how far the language has made it.
+
+As you can see, there is a lot of stuff that can be improved here, namely how "object" works
+
+It will be kinda cool if EVERYTHING about the language is implemented in the standard library
+///
+
+
+
+func exit(code: int) -> none {
+	__builtin__ instr halt code
+}
+
+
+func create(s: int) -> object {
+	let o: object
+	__builtin__ instr objcreate o s
+	return o
+}
+
+
+func size(o: object) -> int {
+	let s: int
+	__builtin__ instr objsize s o
+	return s
+}
+
+
+func set(o: object, i: int, v: unknown) -> none {
+	__builtin__ instr objset o i v
+	return
+}
+
+
+func get(o: object, i: int) -> unknown {
+	let u: unknown
+	__builtin__ instr objget u o i
+	return u
+}
+
+
+func setbyte(o: object, i: int, v: int) -> none {
+	__builtin__ instr objsetbyte o i v
+	return
+}
+
+
+func getbyte(o: object, i: int) -> int {
+	let u: int
+	__builtin__ instr objgetbyte u o i
+	return u
+}
+
+
+func resize(o: object, s: int) -> none {
+	__builtin__ instr objresize o s
+	return
+}
+
+func copy(o: object) -> object {
+	let c: object
+	__builtin__ instr objcopy c o
+	return c
+}
+
+
+func main() -> none {
+	let o1: object = create(10)
+	let o2 = copy(o1)
+	exit(0)
+}
