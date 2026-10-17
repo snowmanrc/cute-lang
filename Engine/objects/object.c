@@ -48,7 +48,7 @@ ct_obj_mgr_new_bucket(CtObjectManager* mgr) {
 
 	mgr->buckets_list[mgr->bucket_count++] = bucket;
 
-	CT_LOG("objects", "New bucket (%u) [%p] created.", bucket->id, bucket);
+	CT_LOG("objects", "New bucket (%u) [%p] created.\n", bucket->id, bucket);
 
 	return bucket;
 }
@@ -60,7 +60,7 @@ ct_obj_init_mgr(CtObjectManager* mgr) {
 	mgr->buckets_list = malloc(sizeof(CtObjectBucket*) * 8);
 	mgr->empty_buckets_stack = NULL;
 
-	CT_LOG("objects", "Initialized object manager.");
+	CT_LOG("objects", "Initialized object manager.\n");
 }
 
 // End the Object manager and all its resources.
@@ -240,5 +240,6 @@ ct_obj_copy(CtObjectManager* manager, CtObject* obj) {
 	CtObject* copy = ct_obj_create(manager, obj->size);
 	memcpy(copy->atoms, obj->atoms, obj->size * sizeof(CtAtom));
 	memcpy(copy->types, obj->types, obj->size * sizeof(CtAtomTypeSize));
+	CT_LOG("objects", "Object (%u.%u) copied from Object (%u.%u)\n", copy->bucket->id, copy->id, obj->bucket->id, obj->id);
 	return copy;
 }
