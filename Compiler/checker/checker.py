@@ -316,7 +316,7 @@ class TypeChecker(NodeVisitor):
 		assert self.current_func_sym.returns
 
 		if node.value is None:
-			if self.current_func_sym.returns is not prim.VOID_CONTAINER:
+			if self.current_func_sym.returns is not prim.NONE_CONTAINER:
 				raise ValueError(f"Function {self.current_func_sym.name} must return a value.")
 
 		else:
