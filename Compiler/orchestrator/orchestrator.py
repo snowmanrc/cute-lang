@@ -36,8 +36,16 @@ class Orchestrator:
 
 
 	def run(self):
-		filepath = sys.argv[1]
-		outpath = filepath.removesuffix(".ct") + ".cute"
+
+		print(sys.argv)
+		if len(sys.argv) <= 1:
+			print("usage: cute [filepath] (outpath)")
+		elif len(sys.argv) == 2:
+			filepath = sys.argv[1]
+			outpath = filepath.removesuffix(".ct") + ".cute"
+		else:
+			filepath = sys.argv[1]
+			outpath = sys.argv[2]
 
 		self.compile(filepath, outpath)
 		
