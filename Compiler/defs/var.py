@@ -1,2 +1,1 @@
-
 ENTRYPOINT_FUNC_NAME = "main"

@@ -5,6 +5,7 @@ A list of stuff to do.
 
 ### Language & Compiler
 
+- Refactor the compiler!!!
 - Somehow make it so that access is not a binary operation but an actual node `Not needed as of now`
 - add proper resolution `DONE`
 - add type checking `DONE`

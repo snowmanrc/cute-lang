@@ -6,10 +6,10 @@ from Compiler.lexer.defs import Token, TokenType, SymbolType, KeywordType, KEYWO
 class Lexer:
 
 
-	def __init__(self, source: str):
-		self.source = source
+	def __init__(self):
+		self.source = ""
+		self.length = len(self.source)
 		self.pos = 0
-		self.length = len(source)
 
 
 	def peek(self, offset: int = 0) -> str:
@@ -25,8 +25,12 @@ class Lexer:
 		return ch
 
 
-	def tokenize(self) -> List[Token]:
+	def tokenize(self, source: str) -> List[Token]:
 
+		self.source = source
+		self.length = len(source)
+		self.pos = 0
+		
 		tokens = []
 		while self.pos < self.length:
 			ch = self.peek()

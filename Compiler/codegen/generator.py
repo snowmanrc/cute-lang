@@ -1,8 +1,8 @@
 from Compiler.codegen.state import GeneratorState
 from Compiler.defs.op import BinaryOpType, UnaryOpType
 from Compiler.defs.nodes import Node, NodeVisitor
-from Compiler.imagen.image import ImageBuilder
-from Compiler.imagen.program import Program, Procedure, Label, Constant, Instruction, InstrSet
+from Compiler.codegen.image import ImageBuilder
+from Compiler.codegen.program import Program, Procedure, Label, Constant, Instruction, InstrSet
 from Compiler.codegen.builtin import BuiltinHandler
 
 import Compiler.defs.symbols as syms

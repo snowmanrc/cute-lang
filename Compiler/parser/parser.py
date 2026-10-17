@@ -1,17 +1,18 @@
-from Compiler.defs.op import BinaryOpType
+from Compiler.lexer.lexer import Lexer
 from Compiler.lexer.defs import KeywordType, SymbolType, Token, TokenType
 
 from Compiler.defs.nodes import Node
-import Compiler.parser.rules as r
+from Compiler.parser.rules import Rules
 
 
 class Parser:
 
 
-	def __init__(self, tokens: list[Token]) -> None:
-		self.tokens = tokens
+	def __init__(self) -> None:
+		self.lexer = Lexer()
+		self.tokens: list[Token] = []
 		self.pos = 0
-		self.length = len(tokens)
+		self.length = len(self.tokens)
 
 
 	def peek(self, offset: int = 0) -> Token:
@@ -23,7 +24,6 @@ class Parser:
 
 	def advance(self, steps: int = 1) -> Token:
 		tok = self.peek()
-		print(tok)
 		self.pos += steps
 		return tok
 
@@ -64,7 +64,11 @@ class Parser:
 			self.advance()
 
 
-	def parse(self):
+	def parse(self, tokens: list[Token]):
+
+		self.tokens = tokens
+		self.length = len(tokens)
+		self.pos = 0
 
 		nodes = []
 
@@ -138,9 +142,9 @@ class Parser:
 			if self.expect_symbol(SymbolType.RParen) is None:
 				raise ValueError("Unterminated paran.")
 
-		elif symbol_token.value in r.UNARY_OP_MAPPING:
-			unary = r.UNARY_OP_MAPPING[symbol_token.value]
-			l_bp, r_bp = r.OPERATOR_BINDING_POWER[unary]
+		elif symbol_token.value in Rules.UNARY_OP_MAPPING:
+			unary = Rules.UNARY_OP_MAPPING[symbol_token.value]
+			l_bp, r_bp = Rules.OPERATOR_BINDING_POWER[unary]
 			lhs = self.parse_expression(r_bp)
 			lhs = Node.UnaryOp(
 				unary,
@@ -156,7 +160,7 @@ class Parser:
 				self.backtrack()
 				return lhs
 
-			if self.peek().value in r.STATEMENT_ENDERS:
+			if self.peek().value in Rules.STATEMENT_ENDERS:
 				return lhs
 
 			symbol_token = self.expect_token_type(TokenType.Symbol, True)
@@ -166,17 +170,17 @@ class Parser:
 
 			if symbol_token.value == SymbolType.LParen:
 				self.backtrack()
-				if prev_bp >= r.PARENTHESIS_INFIX_BP:
+				if prev_bp >= Rules.PARENTHESIS_INFIX_BP:
 					return lhs
 				lhs = self.parse_call(lhs)
 				continue
 
-			operation = r.BINARY_OPERATOR_MAPPING.get(symbol_token.extract(SymbolType))
+			operation = Rules.BINARY_OPERATOR_MAPPING.get(symbol_token.extract(SymbolType))
 
 			if operation is None:
 				raise ValueError(f"Unknown token: {self.peek()}")
 
-			l_bp, r_bp = r.OPERATOR_BINDING_POWER[operation]
+			l_bp, r_bp = Rules.OPERATOR_BINDING_POWER[operation]
 
 			if prev_bp > l_bp:
 				self.backtrack()

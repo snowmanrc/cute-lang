@@ -1,4 +1,4 @@
-from Compiler.imagen.program import Procedure
+from Compiler.codegen.program import Procedure
 
 SLOT_COUNT = 256
 

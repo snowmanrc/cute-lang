@@ -2,7 +2,7 @@ from enum import Enum
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
 
-from Compiler.imagen.image import ImageBuilder, Format
+from Compiler.codegen.image import ImageBuilder, Format
 
 
 class InstrSet(Enum):

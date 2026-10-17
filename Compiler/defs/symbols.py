@@ -9,7 +9,6 @@ class Symbol:
 class SymbolTable(dict[str, Symbol]):
 	"Extended dict class for parent/child symbol tables."
 
-
 	def __init__(self):
 		self.parent: Optional[SymbolTable] = None
 
@@ -59,6 +58,7 @@ class Function(Symbol):
 	arguments: list[Variable] = field(default_factory=list)
 	returns: Optional["Container"] = None
 	is_entrypoint: bool = False
+
 
 @dataclass
 class Container(Symbol):
