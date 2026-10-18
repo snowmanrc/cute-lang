@@ -87,6 +87,7 @@ typedef enum {
     CT_INSTR_CALL         = 0xB0,
     CT_INSTR_RETURN       = 0xB1,
     CT_INSTR_RETURN_VAL   = 0xB2,
+	CT_INSTR_HOSTCALL     = 0xB3,
 
     CT_INSTR_OBJ_CREATE     = 0xC0,
     CT_INSTR_OBJ_SIZE       = 0xC1,

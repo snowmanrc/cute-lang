@@ -231,6 +231,7 @@ ct_engine_exec(CtEngine* engine, CtContext* ctx) {
 		[CT_INSTR_CALL]       = &&HANDLER_CALL,
 		[CT_INSTR_RETURN]     = &&HANDLER_RETURN,
 		[CT_INSTR_RETURN_VAL] = &&HANDLER_RETURN_VAL,
+		[CT_INSTR_HOSTCALL]   = &&HANDLER_HOSTCALL,
 
 		[CT_INSTR_OBJ_CREATE]    = &&HANDLER_OBJ_CREATE,
 		[CT_INSTR_OBJ_SIZE]      = &&HANDLER_OBJ_SIZE,
@@ -606,6 +607,8 @@ HANDLER_RETURN_VAL:
 	ct_ctx_load_atom(ctx, r1, &a1, &t1);
 	ct_ctx_return_procedure(ctx, a1, t1);
 	NEXT();
+
+HANDLER_HOSTCALL:
 
 HANDLER_OBJ_CREATE:
 	r1 = instrs[ctx->ip++];
