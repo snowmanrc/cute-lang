@@ -29,32 +29,6 @@ func size(o: object) -> int {
 }
 
 
-func set(o: object, i: int, v: unknown) -> none {
-	__builtin__ instr objset o i v
-	return
-}
-
-
-func get(o: object, i: int) -> unknown {
-	let u: unknown
-	__builtin__ instr objget u o i
-	return u
-}
-
-
-func setbyte(o: object, i: int, v: int) -> none {
-	__builtin__ instr objsetbyte o i v
-	return
-}
-
-
-func getbyte(o: object, i: int) -> int {
-	let u: int
-	__builtin__ instr objgetbyte u o i
-	return u
-}
-
-
 func resize(o: object, s: int) -> none {
 	__builtin__ instr objresize o s
 	return

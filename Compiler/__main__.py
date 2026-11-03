@@ -1,4 +1,4 @@
-from Compiler.orchestrator import Orchestrator
+from Compiler.orchestration import Orchestrator
 
 
 def main():

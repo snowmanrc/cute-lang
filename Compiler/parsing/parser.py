@@ -1,15 +1,14 @@
-from Compiler.lexer.lexer import Lexer
-from Compiler.lexer.defs import KeywordType, SymbolType, Token, TokenType
+from Compiler.lexing.lexer import Lexer
+from Compiler.lexing.definitions import KeywordType, SymbolType, Token, TokenType
 
 from Compiler.defs.nodes import Node
-from Compiler.parser.rules import Rules
+from Compiler.parsing.rules import Rules
 
 
 class Parser:
 
 
 	def __init__(self) -> None:
-		self.lexer = Lexer()
 		self.tokens: list[Token] = []
 		self.pos = 0
 		self.length = len(self.tokens)

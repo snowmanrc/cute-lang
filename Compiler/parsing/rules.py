@@ -1,6 +1,6 @@
 from typing import Union
 
-from Compiler.lexer.defs import SymbolType
+from Compiler.lexing.definitions import SymbolType
 from Compiler.defs.op import BinaryOpType, UnaryOpType
 
 

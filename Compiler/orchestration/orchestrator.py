@@ -1,9 +1,9 @@
 import sys
 
-from Compiler.lexer.lexer import Lexer
-from Compiler.parser.parser import Parser
-from Compiler.resolver.resolver import Resolver
-from Compiler.checker.checker import TypeChecker
+from Compiler.lexing.lexer import Lexer
+from Compiler.parsing.parser import Parser
+from Compiler.resolution.resolver import Resolver
+from Compiler.checking.checker import TypeChecker
 from Compiler.codegen.generator import CodeGenerator
 
 
@@ -19,8 +19,8 @@ class Orchestrator:
 		with open(filepath) as file:
 			content = file.read()
 		
-		lexer = Lexer()
-		tokens = lexer.tokenize(content)
+		lexer = Lexer(content)
+		tokens = lexer.tokenize()
 		
 		parser = Parser()
 		program = parser.parse(tokens)
@@ -37,7 +37,6 @@ class Orchestrator:
 
 	def run(self):
 
-		print(sys.argv)
 		if len(sys.argv) <= 1:
 			print("usage: cute [filepath] (outpath)")
 		elif len(sys.argv) == 2:
