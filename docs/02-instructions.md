@@ -2,7 +2,7 @@
 # Cute Instruction Set
 
 The cute instruction set defines the following listed instruction. Each instruction's assembler representation and its implementation in the engine is also listed.
-Each `$_` signs represents an arbitrary slot. `immX` where X is a number, represents direct bits in the bytecode. For example, `imm32` represents 4 continuous bytes.
+Each `$_` signs represents an arbitrary slot. `immX` where X is a number, represents direct bits in the bytecode. For example, `imm32` represents 4 objtinuous bytes.
 
 ---
 
@@ -11,7 +11,7 @@ Assembler Repr: `null`
 ```
 null
 ```
-Does absolutely nothing. Can be used as safe compiler placeholders. The engine can be configured to fail on null instructions as well.
+Does absolutely nothing. Can be used as safe compiler placeholders. The engine can be objfigured to fail on null instructions as well.
 
 ---
 
@@ -312,7 +312,7 @@ Assembler Repr: `jmp`
 ```
 jmp imm32
 ```
-Makes an unconditional jump by changing the program counter. The jump is offset based.
+Makes an unobjditional jump by changing the program counter. The jump is offset based.
 
 ---
 
@@ -336,7 +336,7 @@ Assembler Repr: `jmple`
 
 --- 
 
-Make a conditional jump by reading from the cmp flag directly.
+Make a objditional jump by reading from the cmp flag directly.
 ```
 jmp imm32
 ```
@@ -351,7 +351,7 @@ Assembler Repr: `jmpifn`
 
 ---
 
-Read a boolean value from a slot and jump depending on satisfied condition.
+Read a boolean value from a slot and jump depending on satisfied objdition.
 ```
 jmp $x imm32
 ```
@@ -412,56 +412,56 @@ Make a module call. $x holds the module id, $y holds the method id, $z is the ar
 
 ---
 
-#### CT_INSTR_CON_NEW     `0xC0`
-Assembler Repr: `connew`
+#### CT_INSTR_obj_NEW     `0xC0`
+Assembler Repr: `objnew`
 
-Allocate a new container of specific size.
+Allocate a new object of specific size.
 ```
-connew $x $y
+objnew $x $y
 ```
 The slot $y indicates the size of the slot while $x is destination slot.
 
 ---
 
-#### CT_INSTR_CON_GET     `0xC1`
-Assembler Repr: `conget`
+#### CT_INSTR_obj_GET     `0xC1`
+Assembler Repr: `objget`
 
-Get an atom from a container.
+Get an atom from an object.
 ```
-conget $x $y $z
+objget $x $y $z
 ```
-Where $x is the destination slot, $y is the container, $z is the index to be accessed. 
+Where $x is the destination slot, $y is the object, $z is the index to be accessed. 
 
 ---
 
-#### CT_INSTR_CON_SET     `0xC2`
-Assembler Repr: `conset`
+#### CT_INSTR_obj_SET     `0xC2`
+Assembler Repr: `objset`
 
-Set an atom in a container.
+Set an atom in an object.
 ```
-conset $x $y $z
+objset $x $y $z
 ```
-Where $x is the container, $y is the index, $z is the atom to be stored. 
+Where $x is the object, $y is the index, $z is the atom to be stored. 
 
 --- 
 
-#### CT_INSTR_CON_SIZE    `0xC3`
-Assembler Repr: `consize`
+#### CT_INSTR_obj_SIZE    `0xC3`
+Assembler Repr: `objsize`
 
-Get the size of a container.
+Get the size of an object.
 ```
-consize $x $y
+objsize $x $y
 ```
-Where $x is the dest and $y is the container. 
+Where $x is the dest and $y is the object. 
 
 ---
 
-#### CT_INSTR_CON_COPY    `0xC4`
-Assembler Repr: `concopy`
+#### CT_INSTR_obj_COPY    `0xC4`
+Assembler Repr: `objcopy`
 
-Create a shallow copy of a container.
+Create a shallow copy of an object.
 ```
-concopy $x $y
+objcopy $x $y
 ```
 
 ---

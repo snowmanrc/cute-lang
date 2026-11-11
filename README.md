@@ -54,6 +54,9 @@ cute demo.cute
 
 ### Installing
 
+> [!WARNING] 
+> cute is still heavily in its development and is in no stage of being installed. The language is also highly unstable.
+
 No official installation exists since the project is still in its infant stage.
 
 1. Clone the repository.
