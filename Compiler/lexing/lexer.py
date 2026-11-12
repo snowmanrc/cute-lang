@@ -1,9 +1,11 @@
 from typing import List, Optional
 
-from Compiler.lexing.definitions import Token, TokenType, SymbolType, KeywordType, KEYWORD_MAP, SYMBOL_MAP
+from Compiler.lexing.tokens import Token, TokenType
+from Compiler.lexing.defintions import SymbolType, KeywordType, KEYWORD_MAP, SYMBOL_MAP
 
 
 class Lexer:
+	"Class for lexing the source code into tokens."
 
 	def __init__(self, source: str):
 		self.source = source
@@ -11,16 +13,26 @@ class Lexer:
 		self.pos = 0
 
 
+	def setSource(self, source: str):
+		"Update the current source and resetting the lexer."
+		self.source = source
+		self.length = len(self.source)
+		self.pos = 0
+
+
 	def tokenize(self) -> List[Token]:
-		
+		"Start the tokenization of the current source."
+
 		tokens = []
 		while self.pos < self.length:
 			ch = self._peek()
 
-			if ch in " \t\r":
+			# skip whitespace
+			if ch in " \t\r": 
 				self._advance()
 				continue
 
+			# newline counts as a statement ender
 			if ch == "\n":
 				self._advance()
 				tokens.append(Token(TokenType.EOL, "\n"))
@@ -58,6 +70,7 @@ class Lexer:
 
 
 	def _peek(self, offset: int = 0) -> str:
+		"Peek at the next character."
 		idx = self.pos + offset
 		if idx >= self.length:
 			return ""
@@ -65,12 +78,14 @@ class Lexer:
 
 
 	def _advance(self, steps: int = 1) -> str:
+		"Advance the character pointer by some steps."
 		ch = self._peek()
 		self.pos += steps
 		return ch
 	
 
 	def _skip_comments(self):
+		"Handle single and multi-line comments."
 
 		if self._peek(0) == "/" and self._peek(1) == "/" and self._peek(2) == "/":
 			self._advance(3)
@@ -86,7 +101,10 @@ class Lexer:
 
 
 	def _lex_number(self) -> Token:
-
+		"""
+		Tokenize a number.
+		Can tokenize integars, floating numbers, hexadecimal (0x) and binary (0b)
+		"""
 		start = self.pos
 
 		if self._peek() == "0":
@@ -126,28 +144,81 @@ class Lexer:
 
 
 	def _lex_string(self) -> Token:
-
+		"Tokenize a string and process escape sequences."
 		self._advance()
-		start = self.pos
+		chars = []
 
-		while self.pos < self.length and self._peek() != '"':
+		while self.pos < self.length:
+			ch = self._peek()
+			if ch == '"':
+				break
+			if ch == '\\':
+				self._advance() 
+				if self.pos >= self.length:
+					raise ValueError("Unterminated string literal")
+				
+				escaped = self._peek()
+				if escaped == 'n':
+					chars.append('\n')
+				elif escaped == 't':
+					chars.append('\t')
+				elif escaped == 'r':
+					chars.append('\r')
+				elif escaped == '\\':
+					chars.append('\\')
+				elif escaped == '"':
+					chars.append('"')
+				else:
+					chars.append(escaped)
+				
+				self._advance()
+				continue
+
+			chars.append(ch)
 			self._advance()
 
 		if self.pos >= self.length:
 			raise ValueError("Unterminated string literal")
 
-		val = self.source[start:self.pos]
 		self._advance()
-		return Token(TokenType.String, val)
+		return Token(TokenType.String, "".join(chars))
 
 
 	def _lex_char(self) -> Token:
+		"Tokenize a character literal, handling escape sequences."
+		self._advance()
 
-		self._advance()
-		val = self._advance()
-		if self._peek() != "'":
+		if self.pos >= self.length:
+			raise ValueError("Unterminated char literal")
+
+		ch = self._peek()
+		if ch == '\\':
+			self._advance()
+			if self.pos >= self.length:
+				raise ValueError("Unterminated char literal")
+
+			escaped = self._peek()
+			if escaped == 'n':
+				val = '\n'
+			elif escaped == 't':
+				val = '\t'
+			elif escaped == 'r':
+				val = '\r'
+			elif escaped == '\\':
+				val = '\\'
+			elif escaped == "'":
+				val = "'"
+			else:
+				val = escaped
+			self._advance()
+		else:
+			val = ch
+			self._advance()
+
+		if self.pos >= self.length or self._peek() != "'":
 			raise ValueError("Unterminated or multi-character char literal")
-		self._advance()
+
+		self._advance() 
 		return Token(TokenType.Char, val)
 
 
