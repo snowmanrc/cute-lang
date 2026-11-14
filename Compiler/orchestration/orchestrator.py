@@ -18,14 +18,14 @@ class Orchestrator:
 		loader = Loader()
 		program = loader.load(filepath)
 
-		print(program)
-		
 		resolver = Resolver()
 		resolver.visit(program)
 			
 		checker = TypeChecker()
 		checker.visit(program)
-		
+
+		print(program.dump())
+
 		gen = CodeGenerator(outpath)
 		gen.visit(program)
 
