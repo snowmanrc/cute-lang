@@ -29,3 +29,4 @@ A `cute` image, represented by `.cute` files are compiled versions of `csm` file
 ```
 
 - The ID of a procedure corresponds to it's index in the procedure table.
+- `...` means that the item above it can repeat.

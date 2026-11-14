@@ -1,14 +1,12 @@
 
 # Building Cute
 
-The required compiler is `gcc` or `clang`,
+The required compiler is `gcc` or `clang`.
 
-The project uses the `zero-build` build system (which I made myself :p). It is recommended you install that before building `Cute`. It's just a python package away.
-
-Check out zero-build here: [zero-build](https://github.com/kxmtkw/ZeroBuild)
-
-
-A `CMake` file is also exported with the project if you want to use that.
+> [!NOTE]
+> The project uses the `zero-build` build system (which I made myself :p). It is recommended you install that before building `Cute`. It's just a python package away.
+> 
+> Check out zero-build here: [zero-build](https://github.com/kxmtkw/ZeroBuild)
 
 
 To build, first clone the repository and `cd` into the repo root.
