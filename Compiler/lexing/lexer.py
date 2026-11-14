@@ -1,5 +1,6 @@
 from typing import List, Optional
 
+from Compiler.lexing.stream import TokenStream
 from Compiler.lexing.tokens import Token, TokenType
 from Compiler.lexing.defintions import SymbolType, KeywordType, KEYWORD_MAP, SYMBOL_MAP
 
@@ -7,24 +8,21 @@ from Compiler.lexing.defintions import SymbolType, KeywordType, KEYWORD_MAP, SYM
 class Lexer:
 	"Class for lexing the source code into tokens."
 
-	def __init__(self, source: str):
-		self.source = source
-		self.length = len(self.source)
-		self.pos = 0
+	def __init__(self):
+		self._source = ""
+		self._length = len(self._source)
+		self._pos = 0
 
+	
+	def tokenize(self, source: str) -> TokenStream:
+		"Tokenizes the source."
 
-	def setSource(self, source: str):
-		"Update the current source and resetting the lexer."
-		self.source = source
-		self.length = len(self.source)
-		self.pos = 0
-
-
-	def tokenize(self) -> List[Token]:
-		"Start the tokenization of the current source."
-
+		self._source = source
+		self._length = len(self._source)
+		self._pos = 0
+		
 		tokens = []
-		while self.pos < self.length:
+		while self._pos < self._length:
 			ch = self._peek()
 
 			# skip whitespace
@@ -63,24 +61,24 @@ class Lexer:
 				tokens.append(symbol_token)
 				continue
 
-			raise ValueError(f"Unexpected character '{ch}' at index {self.pos}")
+			raise ValueError(f"Unexpected character '{ch}' at index {self._pos}")
 
 		tokens.append(Token(TokenType.EOF, None))
-		return tokens
+		return TokenStream(tokens)
 
 
 	def _peek(self, offset: int = 0) -> str:
 		"Peek at the next character."
-		idx = self.pos + offset
-		if idx >= self.length:
+		idx = self._pos + offset
+		if idx >= self._length:
 			return ""
-		return self.source[idx]
+		return self._source[idx]
 
 
 	def _advance(self, steps: int = 1) -> str:
 		"Advance the character pointer by some steps."
 		ch = self._peek()
-		self.pos += steps
+		self._pos += steps
 		return ch
 	
 
@@ -89,14 +87,14 @@ class Lexer:
 
 		if self._peek(0) == "/" and self._peek(1) == "/" and self._peek(2) == "/":
 			self._advance(3)
-			while self.pos < self.length:
+			while self._pos < self._length:
 				if self._peek(0) == "/" and self._peek(1) == "/" and self._peek(2) == "/":
 					self._advance(3)
 					break
 				self._advance()
 		else:
 			self._advance(2)
-			while self.pos < self.length and self._peek() != "\n":
+			while self._pos < self._length and self._peek() != "\n":
 				self._advance()
 
 
@@ -105,28 +103,28 @@ class Lexer:
 		Tokenize a number.
 		Can tokenize integars, floating numbers, hexadecimal (0x) and binary (0b)
 		"""
-		start = self.pos
+		start = self._pos
 
 		if self._peek() == "0":
 			next_ch = self._peek(1).lower()
 
 			if next_ch == "x":
 				self._advance(2)
-				while self.pos < self.length and (self._peek().isdigit() or self._peek().lower() in "abcdef"):
+				while self._pos < self._length and (self._peek().isdigit() or self._peek().lower() in "abcdef"):
 					self._advance()
-				val = int(self.source[start:self.pos], 16)
+				val = int(self._source[start:self._pos], 16)
 				return Token(TokenType.Hex, val)
 
 			elif next_ch == "b":
 				self._advance(2)
-				while self.pos < self.length and self._peek() in "01":
+				while self._pos < self._length and self._peek() in "01":
 					self._advance()
-				val = int(self.source[start:self.pos], 2)
+				val = int(self._source[start:self._pos], 2)
 				return Token(TokenType.Bin, val)
 
 		is_float = False
 
-		while self.pos < self.length:
+		while self._pos < self._length:
 			if self._peek().isdigit():
 				self._advance()
 			elif self._peek() == "." and not is_float and self._peek(1).isdigit():
@@ -135,7 +133,7 @@ class Lexer:
 			else:
 				break
 
-		num_str = self.source[start:self.pos]
+		num_str = self._source[start:self._pos]
 
 		if is_float:
 			return Token(TokenType.Float, float(num_str))
@@ -148,13 +146,13 @@ class Lexer:
 		self._advance()
 		chars = []
 
-		while self.pos < self.length:
+		while self._pos < self._length:
 			ch = self._peek()
 			if ch == '"':
 				break
 			if ch == '\\':
 				self._advance() 
-				if self.pos >= self.length:
+				if self._pos >= self._length:
 					raise ValueError("Unterminated string literal")
 				
 				escaped = self._peek()
@@ -177,7 +175,7 @@ class Lexer:
 			chars.append(ch)
 			self._advance()
 
-		if self.pos >= self.length:
+		if self._pos >= self._length:
 			raise ValueError("Unterminated string literal")
 
 		self._advance()
@@ -188,13 +186,13 @@ class Lexer:
 		"Tokenize a character literal, handling escape sequences."
 		self._advance()
 
-		if self.pos >= self.length:
+		if self._pos >= self._length:
 			raise ValueError("Unterminated char literal")
 
 		ch = self._peek()
 		if ch == '\\':
 			self._advance()
-			if self.pos >= self.length:
+			if self._pos >= self._length:
 				raise ValueError("Unterminated char literal")
 
 			escaped = self._peek()
@@ -215,7 +213,7 @@ class Lexer:
 			val = ch
 			self._advance()
 
-		if self.pos >= self.length or self._peek() != "'":
+		if self._pos >= self._length or self._peek() != "'":
 			raise ValueError("Unterminated or multi-character char literal")
 
 		self._advance() 
@@ -224,10 +222,10 @@ class Lexer:
 
 	def _lex_word_or_keyword_or_bool(self) -> Token:
 
-		start = self.pos
-		while self.pos < self.length and (self._peek().isalnum() or self._peek() == "_"):
+		start = self._pos
+		while self._pos < self._length and (self._peek().isalnum() or self._peek() == "_"):
 			self._advance()
-		text = self.source[start:self.pos]
+		text = self._source[start:self._pos]
 
 		if text == KeywordType.BoolTrue.value:
 			return Token(TokenType.Bool, True)
@@ -240,8 +238,8 @@ class Lexer:
 
 	def _lex_symbol(self) -> Optional[Token]:
 
-		if self.pos + 1 < self.length:
-			two_char = self.source[self.pos:self.pos + 2]
+		if self._pos + 1 < self._length:
+			two_char = self._source[self._pos:self._pos + 2]
 			if two_char in SYMBOL_MAP:
 				self._advance(2)
 				return Token(TokenType.Symbol, SYMBOL_MAP[two_char])

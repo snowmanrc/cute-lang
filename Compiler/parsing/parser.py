@@ -1,5 +1,6 @@
 from Compiler.lexing.lexer import Lexer
-from Compiler.lexing.definitions import KeywordType, SymbolType, Token, TokenType
+from Compiler.lexing.stream import TokenStream
+from Compiler.lexing.tokens import KeywordType, SymbolType, Token, TokenType
 
 from Compiler.defs.nodes import Node
 from Compiler.parsing.rules import Rules
@@ -9,191 +10,143 @@ class Parser:
 
 
 	def __init__(self) -> None:
-		self.tokens: list[Token] = []
-		self.pos = 0
-		self.length = len(self.tokens)
+		self._tokens: TokenStream
 
 
-	def peek(self, offset: int = 0) -> Token:
-		idx = self.pos + offset
-		if idx >= self.length:
-			return Token(TokenType.EOF)
-		return self.tokens[idx]
+	def parse(self, tokens: TokenStream):
 
-
-	def advance(self, steps: int = 1) -> Token:
-		tok = self.peek()
-		self.pos += steps
-		return tok
-
-
-	def backtrack(self, steps: int = 1):
-		self.pos -= steps
-
-
-	def expect_token_type(self, type: TokenType, panic: bool = False) -> Token | None:
-		if self.peek().type == type:
-			return self.advance()
-
-		if panic:
-			print(f"Expected {type.name}, got {self.peek()}")
-			exit(1)
-
-
-	def expect_keyword(self, kw: KeywordType, panic: bool = False) -> Token | None:
-		if self.peek().type == TokenType.Keyword and self.peek().value == kw:
-			return self.advance()
-
-		if panic:
-			print(f"Expected {kw.value}, got {self.peek()}")
-			exit(1)
-
-
-	def expect_symbol(self, sym: SymbolType, panic: bool = False) -> Token | None:
-		if self.peek().type == TokenType.Symbol and self.peek().value == sym:
-			return self.advance()
-
-		if panic:
-			print(f"Expected {sym.value}, got {self.peek().value}")
-			exit(1)
-
-
-	def eat_stmt_enders(self):
-		while self.peek().type == TokenType.EOL or self.expect_symbol(SymbolType.Semicolon):
-			self.advance()
-
-
-	def parse(self, tokens: list[Token]):
-
-		self.tokens = tokens
-		self.length = len(tokens)
-		self.pos = 0
+		self._tokens = tokens
 
 		nodes = []
 
 		while True:
 
-			self.eat_stmt_enders()
+			self._eat_stmt_enders()
 
-			if self.expect_keyword(KeywordType.Func):
-				self.backtrack()
-				func = self.parse_func()
+			if self._tokens.expect_keyword(KeywordType.Func):
+				self._tokens.backtrack()
+				func = self._parse_func()
 				nodes.append(func)
 				continue
 
-			if self.expect_keyword(KeywordType.Container):
-				self.backtrack()
-				func = self.parse_container()
+			if self._tokens.expect_keyword(KeywordType.Container):
+				self._tokens.backtrack()
+				func = self._parse_container()
 				nodes.append(func)
 				continue
 
-			if self.expect_keyword(KeywordType.Impl):
-				self.backtrack()
-				func = self.parse_impl()
+			if self._tokens.expect_keyword(KeywordType.Impl):
+				self._tokens.backtrack()
+				func = self._parse_impl()
 				nodes.append(func)
 				continue
 
-			if self.peek().type == TokenType.EOF:
+			if self._tokens.peek().type == TokenType.EOF:
 				break
 
-			raise ValueError(f"Unexpected token: {self.peek()}")
+			raise ValueError(f"Unexpected token: {self._tokens.peek()}")
 
 		program = Node.Program(nodes)
 
 		return program
 
 
-	def parse_statement(self) -> Node.Statement:
+	def _eat_stmt_enders(self):
+		while self._tokens.peek().type == TokenType.EOL or self._tokens.expect_symbol(SymbolType.Semicolon):
+			self._tokens.advance()
 
-		self.eat_stmt_enders()
+
+	def _parse_statement(self) -> Node.Statement:
+
+		self._eat_stmt_enders()
 
 		handlers: dict = {
-			KeywordType.Let:     self.parse_decl,
-			KeywordType.If:      self.parse_if,
-			KeywordType.While:   self.parse_while,
-			KeywordType.For:     self.parse_for,
-			KeywordType.Return:  self.parse_return,
-			KeywordType.Builtin: self.parse_builtin,
-			SymbolType.LBrace:   self.parse_block,
+			KeywordType.Let:     self._parse_decl,
+			KeywordType.If:      self._parse_if,
+			KeywordType.While:   self._parse_while,
+			KeywordType.For:     self._parse_for,
+			KeywordType.Return:  self._parse_return,
+			KeywordType.Builtin: self._parse_builtin,
+			SymbolType.LBrace:   self._parse_block,
 		}
 
-		current_token = self.peek()
+		current_token = self._tokens.peek()
 
 		if current_token.value in handlers:
 			node = handlers[current_token.value]()
 		else:
-			node = self.parse_expression()
+			node = self._parse_expression()
 
-		self.eat_stmt_enders()
+		self._eat_stmt_enders()
 
 		return node
 
 
-	def parse_expression(self, prev_bp: float = 0) -> Node.Expression:
+	def _parse_expression(self, prev_bp: float = 0) -> Node.Expression:
 
-		symbol_token = self.expect_token_type(TokenType.Symbol)
+		symbol_token = self._tokens.expect_token(TokenType.Symbol)
 
 		if symbol_token is None:
-			lhs = self.parse_atom()
+			lhs = self._parse_atom()
 
 		elif symbol_token.value == SymbolType.LParen:
-			lhs = self.parse_expression()
-			if self.expect_symbol(SymbolType.RParen) is None:
+			lhs = self._parse_expression()
+			if self._tokens.expect_symbol(SymbolType.RParen) is None:
 				raise ValueError("Unterminated paran.")
 
 		elif symbol_token.value in Rules.UNARY_OP_MAPPING:
 			unary = Rules.UNARY_OP_MAPPING[symbol_token.value]
 			l_bp, r_bp = Rules.OPERATOR_BINDING_POWER[unary]
-			lhs = self.parse_expression(r_bp)
+			lhs = self._parse_expression(r_bp)
 			lhs = Node.UnaryOp(
 				unary,
 				lhs
 			)
 
 		else:
-			raise ValueError(f"Unexpected token {self.peek()}")
+			raise ValueError(f"Unexpected token {self._tokens.peek()}")
 
 		while True:
 
-			if self.expect_token_type(TokenType.EOL) or self.expect_token_type(TokenType.EOF):
-				self.backtrack()
+			if self._tokens.expect_token(TokenType.EOL) or self._tokens.expect_token(TokenType.EOF):
+				self._tokens.backtrack()
 				return lhs
 
-			if self.peek().value in Rules.STATEMENT_ENDERS:
+			if self._tokens.peek().value in Rules.STATEMENT_ENDERS:
 				return lhs
 
-			symbol_token = self.expect_token_type(TokenType.Symbol, True)
+			symbol_token = self._tokens.expect_token(TokenType.Symbol)
 
 			if symbol_token is None:
 				raise ValueError("Expected symbol.")
 
 			if symbol_token.value == SymbolType.LParen:
-				self.backtrack()
+				self._tokens.backtrack()
 				if prev_bp >= Rules.PARENTHESIS_INFIX_BP:
 					return lhs
-				lhs = self.parse_call(lhs)
+				lhs = self._parse_call(lhs)
 				continue
 
 			operation = Rules.BINARY_OPERATOR_MAPPING.get(symbol_token.extract(SymbolType))
 
 			if operation is None:
-				raise ValueError(f"Unknown token: {self.peek()}")
+				raise ValueError(f"Unknown token: {self._tokens.peek()}")
 
 			l_bp, r_bp = Rules.OPERATOR_BINDING_POWER[operation]
 
 			if prev_bp > l_bp:
-				self.backtrack()
+				self._tokens.backtrack()
 				return lhs
 
 			lhs = Node.BinaryOp(
 				operation,
 				lhs,
-				self.parse_expression(r_bp)
+				self._parse_expression(r_bp)
 			)
 
 
-	def parse_atom(self) -> Node.Expression:
-		token = self.advance()
+	def _parse_atom(self) -> Node.Expression:
+		token = self._tokens.advance()
 
 		if token.type in (TokenType.Int, TokenType.Hex, TokenType.Bin):
 			return Node.Literal("int", token.extract(int))
@@ -217,16 +170,19 @@ class Parser:
 			raise ValueError(f"Expected atomic expression! Got {token}")
 
 
-	def parse_call(self, callee: Node.Expression) -> Node.Call:
+	def _parse_call(self, callee: Node.Expression) -> Node.Call:
 
-		self.expect_symbol(SymbolType.LParen, True)
+		token = self._tokens.expect_symbol(SymbolType.LParen)
+
+		if token is None: raise ValueError("Expected Left Paren")
 
 		args = []
 
-		while self.expect_symbol(SymbolType.RParen) is None:
-			args.append(self.parse_expression())
-			if not self.expect_symbol(SymbolType.Comma):
-				self.expect_symbol(SymbolType.RParen, True)
+		while self._tokens.expect_symbol(SymbolType.RParen) is None:
+			args.append(self._parse_expression())
+			if not self._tokens.expect_symbol(SymbolType.Comma):
+				token = self._tokens.expect_symbol(SymbolType.RParen)
+				if token is None: raise ValueError("Expected Right Paren")
 				break
 
 		return Node.Call(
@@ -235,166 +191,190 @@ class Parser:
 		)
 
 
-	def parse_block(self) -> Node.Block:
+	def _parse_block(self) -> Node.Block:
 
-		self.expect_symbol(SymbolType.LBrace)
+		self._tokens.expect_symbol(SymbolType.LBrace)
 
 		stmts = []
-		while self.expect_symbol(SymbolType.RBrace) is None:
-			stmts.append(self.parse_statement())
+		while self._tokens.expect_symbol(SymbolType.RBrace) is None:
+			stmts.append(self._parse_statement())
 
 		return Node.Block(stmts)
 
 
-	def parse_decl(self, *, type_must_be_specified: bool = False, let_required: bool = True, no_value: bool = False) -> Node.Declaration:
+	def _parse_decl(self, *, type_must_be_specified: bool = False, let_required: bool = True, no_value: bool = False) -> Node.Declaration:
 
-		self.expect_keyword(KeywordType.Let, let_required)
+		token = self._tokens.expect_keyword(KeywordType.Let)
 
-		name_token = self.expect_token_type(TokenType.Word, True)
-		assert name_token is not None
+		if let_required and token is None: raise ValueError("Expected keyword")
+
+		name_token = self._tokens.expect_token(TokenType.Word)
+		if name_token is None: raise ValueError()
 		name = name_token.extract(str)
 
-		if self.expect_symbol(SymbolType.Colon):
-			decl_type_token = self.expect_token_type(TokenType.Word, True)
-			assert decl_type_token is not None
+		if self._tokens.expect_symbol(SymbolType.Colon):
+			decl_type_token = self._tokens.expect_token(TokenType.Word)
+			if decl_type_token is None: raise ValueError()
 			decl_type = decl_type_token.extract(str)
 		else:
 			if type_must_be_specified:
 				raise ValueError("Type must be specified for this declaration.")
 			decl_type = None
 
-		if self.expect_symbol(SymbolType.Equal) and not no_value:
-			value = self.parse_expression()
+		if self._tokens.expect_symbol(SymbolType.Equal) and not no_value:
+			value = self._parse_expression()
 		else:
 			value = None
 
 		return Node.Declaration(name, Node.Identifier(decl_type) if decl_type else None, value)
 
 
-	def parse_if(self) -> Node.If:
+	def _parse_if(self) -> Node.If:
 
-		self.expect_keyword(KeywordType.If, True)
+		token = self._tokens.expect_keyword(KeywordType.If)
+		if token is None: raise ValueError()
 
-		condition = self.parse_expression()
+		condition = self._parse_expression()
 
-		then_block = self.parse_block()
+		then_block = self._parse_block()
 
-		if self.expect_keyword(KeywordType.Else) is not None:
-			else_stmt = self.parse_statement()
+		if self._tokens.expect_keyword(KeywordType.Else) is not None:
+			else_stmt = self._parse_statement()
 		else:
 			else_stmt = None
 
 		return Node.If(condition, then_block, else_stmt)
 
 
-	def parse_while(self) -> Node.While:
+	def _parse_while(self) -> Node.While:
 
-		self.expect_keyword(KeywordType.While, True)
+		token = self._tokens.expect_keyword(KeywordType.While)
+		if token is None: raise ValueError()
 
-		condition = self.parse_expression()
+		condition = self._parse_expression()
 
-		block = self.parse_block()
+		block = self._parse_block()
 
 		return Node.While(condition, block)
 
 
-	def parse_for(self) -> Node.For:
+	def _parse_for(self) -> Node.For:
 
-		self.expect_keyword(KeywordType.For, True)
+		token = self._tokens.expect_keyword(KeywordType.For)
+		if token is None: raise ValueError()
 
-		init = self.parse_statement()
-		self.expect_symbol(SymbolType.Comma, True)
-		condition = self.parse_expression()
-		self.expect_symbol(SymbolType.Comma, True)
-		step = self.parse_expression()
+		init = self._parse_statement()
+		token = self._tokens.expect_symbol(SymbolType.Comma)
+		if token is None: raise ValueError()
+		condition = self._parse_expression()
+		token = self._tokens.expect_symbol(SymbolType.Comma)
+		if token is None: raise ValueError()
+		step = self._parse_expression()
 
-		block = self.parse_block()
+		block = self._parse_block()
 
 		return Node.For(init, condition, step, block)
 
 
-	def parse_return(self) -> Node.Return:
+	def _parse_return(self) -> Node.Return:
 
-		self.expect_keyword(KeywordType.Return, True)
+		token = self._tokens.expect_keyword(KeywordType.Return)
+		if token is None: raise ValueError()
 
-		if self.expect_symbol(SymbolType.Semicolon) or self.peek().type == TokenType.EOL:
+		if self._tokens.expect_symbol(SymbolType.Semicolon) or self._tokens.peek().type == TokenType.EOL:
 			return Node.Return()
 
-		value = self.parse_expression()
+		value = self._parse_expression()
 
 		return Node.Return(value)
 
 
-	def parse_func(self) -> Node.Function:
+	def _parse_func(self) -> Node.Function:
 
-		self.expect_keyword(KeywordType.Func, True)
-		name_token = self.expect_token_type(TokenType.Word, True)
-		assert name_token is not None
+		token = self._tokens.expect_keyword(KeywordType.Func)
+		if token is None:
+			raise ValueError("Expected keyword Func")
+
+		name_token = self._tokens.expect_token(TokenType.Word)
+		if name_token is None:
+			raise ValueError("Expected function name")
 		name = name_token.extract(str)
 
-		self.expect_symbol(SymbolType.LParen, True)
+		token = self._tokens.expect_symbol(SymbolType.LParen)
+		if token is None:
+			raise ValueError("Expected left parenthesis")
 
 		params = []
 
 		while True:
-			if self.expect_symbol(SymbolType.RParen):
+			if self._tokens.expect_symbol(SymbolType.RParen):
 				break
-			params.append(self.parse_decl(type_must_be_specified=True, let_required=False))
-			self.expect_symbol(SymbolType.Comma, False)
+			params.append(self._parse_decl(type_must_be_specified=True, let_required=False))
+			self._tokens.expect_symbol(SymbolType.Comma)
 
-		self.expect_symbol(SymbolType.Arrow, True)
-		return_type = self.expect_token_type(TokenType.Word, True)
-		assert return_type
-		return_type = return_type.extract(str)
+		token = self._tokens.expect_symbol(SymbolType.Arrow)
+		if token is None:
+			raise ValueError("Expected arrow")
 
-		self.eat_stmt_enders()
+		return_type_token = self._tokens.expect_token(TokenType.Word)
+		if return_type_token is None:
+			raise ValueError("Expected return type")
+		return_type = return_type_token.extract(str)
 
-		body = self.parse_block()
+		self._eat_stmt_enders()
+
+		body = self._parse_block()
 
 		return Node.Function(name, params, body, Node.Identifier(return_type))
 
 
-	def parse_builtin(self) -> Node.BuiltinCommand:
+	def _parse_builtin(self) -> Node.BuiltinCommand:
 
-		self.expect_keyword(KeywordType.Builtin)
+		token = self._tokens.expect_keyword(KeywordType.Builtin)
+		if token is None:
+			raise ValueError("Expected keyword Builtin")
 
 		args: list[Node.Identifier] = []
 
-		while not (self.expect_symbol(SymbolType.Semicolon) or self.expect_token_type(TokenType.EOL)):
-			token = self.expect_token_type(TokenType.Word, True)
-			assert token is not None
+		while not (self._tokens.expect_symbol(SymbolType.Semicolon) or self._tokens.expect_token(TokenType.EOL)):
+			token = self._tokens.expect_token(TokenType.Word)
+			if token is None:
+				raise ValueError("Expected word argument")
 			args.append(Node.Identifier(token.extract(str)))
 
 		return Node.BuiltinCommand(args)
 
 
-	def parse_container(self) -> Node.Container:
+	def _parse_container(self) -> Node.Container:
 
-		self.expect_keyword(KeywordType.Container)
+		token = self._tokens.expect_keyword(KeywordType.Container)
+		if token is None:
+			raise ValueError("Expected keyword Container")
 
-		name_token = self.expect_token_type(TokenType.Word, True)
-		assert name_token is not None
+		name_token = self._tokens.expect_token(TokenType.Word)
+		if name_token is None:
+			raise ValueError("Expected container name")
 		name = name_token.extract(str)
 
-		if self.expect_symbol(SymbolType.Star):
+		if self._tokens.expect_symbol(SymbolType.Star):
 			return Node.Container(
 				name,
 				True,
 				[]
 			)
 
-		self.expect_symbol(SymbolType.LBrace)
+		self._tokens.expect_symbol(SymbolType.LBrace)
 		fields = []
 
-		while not self.expect_symbol(SymbolType.RBrace):
-			self.eat_stmt_enders()
-			fields.append(self.parse_decl(type_must_be_specified=True, let_required=False, no_value=True))
+		while not self._tokens.expect_symbol(SymbolType.RBrace):
+			self._eat_stmt_enders()
+			fields.append(self._parse_decl(type_must_be_specified=True, let_required=False, no_value=True))
 
-			if self.expect_symbol(SymbolType.Comma):
+			if self._tokens.expect_symbol(SymbolType.Comma):
 				continue
 
-			self.eat_stmt_enders()
-			if self.expect_symbol(SymbolType.RBrace):
+			self._eat_stmt_enders()
+			if self._tokens.expect_symbol(SymbolType.RBrace):
 				break
 
 		return Node.Container(
@@ -404,25 +384,30 @@ class Parser:
 		)
 
 
-	def parse_impl(self) -> Node.ContainerImpl:
+	def _parse_impl(self) -> Node.ContainerImpl:
 
-		self.expect_keyword(KeywordType.Impl)
+		token = self._tokens.expect_keyword(KeywordType.Impl)
+		if token is None:
+			raise ValueError("Expected keyword Impl")
 
-		name_token = self.expect_token_type(TokenType.Word, True)
-		assert name_token is not None
+		name_token = self._tokens.expect_token(TokenType.Word)
+		if name_token is None:
+			raise ValueError("Expected implementation name")
 		name = name_token.extract(str)
 
-		self.expect_symbol(SymbolType.LBrace, True)
+		token = self._tokens.expect_symbol(SymbolType.LBrace)
+		if token is None:
+			raise ValueError("Expected left brace")
 
 		methods = []
 
-		while not self.expect_symbol(SymbolType.RBrace):
-			self.eat_stmt_enders()
+		while not self._tokens.expect_symbol(SymbolType.RBrace):
+			self._eat_stmt_enders()
 
-			method = self.parse_func()
+			method = self._parse_func()
 			methods.append(method)
 
-			self.eat_stmt_enders()
+			self._eat_stmt_enders()
 
 		return Node.ContainerImpl(
 			name,

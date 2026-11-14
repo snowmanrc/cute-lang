@@ -1,7 +1,6 @@
 import sys
 
-from Compiler.lexing.lexer import Lexer
-from Compiler.parsing.parser import Parser
+from Compiler.loading.loader import Loader
 from Compiler.resolution.resolver import Resolver
 from Compiler.checking.checker import TypeChecker
 from Compiler.codegen.generator import CodeGenerator
@@ -16,14 +15,10 @@ class Orchestrator:
 
 	def compile(self, filepath: str, outpath: str):
 
-		with open(filepath) as file:
-			content = file.read()
-		
-		lexer = Lexer(content)
-		tokens = lexer.tokenize()
-		
-		parser = Parser()
-		program = parser.parse(tokens)
+		loader = Loader()
+		program = loader.load(filepath)
+
+		print(program)
 		
 		resolver = Resolver()
 		resolver.visit(program)
